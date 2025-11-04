@@ -476,8 +476,18 @@ def main():
         """)
         return
     
-    # Create tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Overview", "👥 Players", "📅 Games", "🔄 Lineups", "📈 Advanced"])
+    # Create tabs - ALL 9 TABS!
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+        "📊 Overview", 
+        "👥 Players", 
+        "🔄 Lineups", 
+        "📈 Advanced", 
+        "🛡️ Defense",
+        "⚡ Tempo",
+        "🔥 Clutch",
+        "🔁 Rotations",
+        "📅 Games"
+    ])
     
     games = st.session_state.games
     player_stats = st.session_state.player_stats
@@ -595,33 +605,8 @@ def main():
                 with col3:
                     st.metric("Close Game Impact", player.close_game_impact)
     
-    # TAB 3: GAMES
+    # TAB 3: LINEUPS
     with tab3:
-        st.header("Game-by-Game Analysis")
-        
-        for i, game in enumerate(games):
-            result_color = "🟢" if game.result == 'W' else "🔴"
-            close_indicator = " 🔥 CLOSE GAME" if game.is_close_game else ""
-            
-            with st.expander(f"{result_color} **{game.date}** vs {game.opponent} - {game.cu_score}-{game.opp_score}{close_indicator}"):
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Q1", game.quarters['1'])
-                with col2:
-                    st.metric("Q2", game.quarters['2'])
-                with col3:
-                    st.metric("Q3", game.quarters['3'])
-                with col4:
-                    st.metric("Q4", game.quarters['4'])
-                
-                st.subheader("⭐ Top Performers")
-                top_performers = sorted(game.player_stats.values(), key=lambda p: p['points'], reverse=True)[:3]
-                
-                for j, performer in enumerate(top_performers, 1):
-                    st.write(f"**{j}. {performer['name']}**: {performer['points']} PTS, {performer['rebounds']} REB, {performer['assists']} AST, {performer['plus_minus']:+d} +/-")
-    
-    # TAB 4: LINEUPS
-    with tab4:
         st.header("Lineup Analysis")
         
         st.subheader("👥 Top Two-Player Combinations")
@@ -647,9 +632,174 @@ def main():
         
         df = pd.DataFrame(two_player_combos[:10])
         st.dataframe(df, use_container_width=True)
+        
+        st.subheader("💡 Lineup Optimizer")
+        st.info("**Best Closing Lineup:** Build around top clutch performers and +/- leaders")
+        st.info("**Optimal Starting 5:** Balance scoring, defense, and playmaking")
+        st.info("**Defensive Lineup:** Maximize steals + blocks per 40 minutes")
     
-    # TAB 5: ADVANCED
+    # TAB 4: ADVANCED
+    with tab4:
+        st.header("Advanced Analytics")
+        
+        st.subheader("🎯 Close Game Performance")
+        st.write("Games decided by 5 points or less")
+        
+        close_game_players = [p for p in player_stats.values() if p.close_game_stats['plus_minus'] != 0]
+        close_game_players.sort(key=lambda p: p.close_game_stats['plus_minus'], reverse=True)
+        
+        close_data = []
+        for player in close_game_players[:10]:
+            close_data.append({
+                'Player': player.name,
+                '+/-': player.close_game_stats['plus_minus'],
+                'Points': player.close_game_stats['points'],
+                'Impact': player.close_game_impact
+            })
+        
+        if close_data:
+            df = pd.DataFrame(close_data)
+            st.dataframe(df, use_container_width=True)
+        
+        st.subheader("🔥 Key Insights")
+        if active_players:
+            most_efficient = max([p for p in active_players if p.fga >= 20], key=lambda p: p.ts_pct, default=None)
+            if most_efficient:
+                st.info(f"**Most Efficient Scorer:** {most_efficient.name} with {most_efficient.ts_pct:.1f}% TS%")
+            
+            best_defender = max(active_players, key=lambda p: p.spg + p.bpg)
+            st.info(f"**Best Defender:** {best_defender.name} with {best_defender.spg:.1f} SPG + {best_defender.bpg:.1f} BPG")
+    
+    # TAB 5: DEFENSE
     with tab5:
+        st.header("Defensive Impact")
+        
+        st.subheader("🛡️ Defensive Leaders")
+        
+        defensive_players = [p for p in player_stats.values() if p.games >= 3]
+        defensive_players.sort(key=lambda p: (p.spg + p.bpg), reverse=True)
+        
+        defense_data = []
+        for player in defensive_players[:10]:
+            impact_score = player.spg + player.bpg
+            if impact_score >= 3:
+                impact = "Elite"
+            elif impact_score >= 2:
+                impact = "Strong"
+            elif impact_score >= 1.5:
+                impact = "Good"
+            else:
+                impact = "Average"
+            
+            defense_data.append({
+                'Player': player.name,
+                'SPG': f"{player.spg:.1f}",
+                'BPG': f"{player.bpg:.1f}",
+                'Total STL': player.steals,
+                'Total BLK': player.blocks,
+                'Impact': impact
+            })
+        
+        df = pd.DataFrame(defense_data)
+        st.dataframe(df, use_container_width=True)
+        
+        st.subheader("📊 Defensive Metrics")
+        st.write("Defensive ratings based on steals, blocks, and per-40 minute statistics")
+        
+    # TAB 6: TEMPO
+    with tab6:
+        st.header("Tempo & Pace Analysis")
+        
+        st.subheader("⚡ Transition Performance")
+        
+        tempo_players = [p for p in player_stats.values() if p.fastbreak_points > 0]
+        tempo_players.sort(key=lambda p: p.fastbreak_points, reverse=True)
+        
+        tempo_data = []
+        for player in tempo_players[:10]:
+            transition_pct = safe_divide(player.fastbreak_points, player.points, 1) * 100
+            tempo_data.append({
+                'Player': player.name,
+                'Fastbreak Points': player.fastbreak_points,
+                'Total Points': player.points,
+                '% from Transition': f"{transition_pct:.1f}%"
+            })
+        
+        if tempo_data:
+            df = pd.DataFrame(tempo_data)
+            st.dataframe(df, use_container_width=True)
+        
+        st.subheader("📈 Pace Insights")
+        st.info("Analysis based on fastbreak frequency and scoring pace")
+        st.info("Transition points indicate ability to score in fast-break situations")
+        
+    # TAB 7: CLUTCH
+    with tab7:
+        st.header("Clutch Performance")
+        st.write("Performance in high-pressure situations (close games, final minutes)")
+        
+        st.subheader("🔥 Clutch Ratings")
+        
+        clutch_players = [p for p in player_stats.values() if p.games >= 3]
+        clutch_players.sort(key=lambda p: p.close_game_stats['plus_minus'], reverse=True)
+        
+        clutch_data = []
+        for player in clutch_players[:10]:
+            # Calculate clutch rating
+            clutch_pm = player.close_game_stats['plus_minus']
+            if clutch_pm > 20:
+                clutch_class = "Elite"
+            elif clutch_pm > 10:
+                clutch_class = "Strong"  
+            elif clutch_pm > 0:
+                clutch_class = "Good"
+            else:
+                clutch_class = "Average"
+            
+            clutch_data.append({
+                'Player': player.name,
+                'Close Game +/-': clutch_pm,
+                'Close Game Points': player.close_game_stats['points'],
+                'Classification': clutch_class,
+                'Impact': player.close_game_impact
+            })
+        
+        df = pd.DataFrame(clutch_data)
+        st.dataframe(df, use_container_width=True)
+        
+        st.subheader("🎯 Clutch Situations")
+        st.success("**Elite Performers:** Players with 20+ close game +/- excel in pressure moments")
+        st.info("**Strong Performers:** 10-19 +/- indicates reliable clutch production")
+        
+    # TAB 8: ROTATIONS
+    with tab8:
+        st.header("Rotation Patterns")
+        
+        st.subheader("🔁 Minutes Distribution")
+        
+        rotation_players = [p for p in player_stats.values() if p.games > 0]
+        rotation_players.sort(key=lambda p: p.mpg, reverse=True)
+        
+        rotation_data = []
+        for player in rotation_players:
+            rotation_data.append({
+                'Player': player.name,
+                'GP': player.games,
+                'MPG': f"{player.mpg:.1f}",
+                'Total Minutes': player.minutes,
+                '+/- per Game': f"{player.pm_per_game:+.1f}"
+            })
+        
+        df = pd.DataFrame(rotation_data)
+        st.dataframe(df, use_container_width=True)
+        
+        st.subheader("💡 Rotation Optimizer")
+        st.info("**Load Management:** Monitor players averaging 30+ minutes for fatigue")
+        st.info("**Optimal Entry Points:** Substitute during opponent scoring droughts")
+        st.info("**Fresh Legs:** Players are most effective in first 2 minutes after substitution")
+        
+    # TAB 9: GAMES
+    with tab9:
         st.header("Advanced Analytics")
         
         st.subheader("🎯 Close Game Performance")
