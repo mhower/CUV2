@@ -168,10 +168,10 @@ def parse_game(xml_file):
         game.home_away = 'Home' if venue.get('homeid') == 'COL' else 'Away'
     
     for team in root.findall('team'):
-    team_id = (team.get('id') or '').upper()
-    if any(key in team_id for key in ['COL', 'COLO', 'COLORADO']):
-        cu_team = team
-        break
+        team_id = (team.get('id') or '').upper()
+        if any(key in team_id for key in ['COL', 'COLO', 'COLORADO']):
+            cu_team = team
+            break
 
     
     if cu_team is None:
