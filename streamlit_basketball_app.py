@@ -300,14 +300,16 @@ def aggregate_stats(games):
                 'is_close': game.is_close_game,
             })
             for qtr, qtr_stats in (game_stats.get('quarter_stats') or {}).items():
-                qtr = int(qtr)  # Ensure consistent key type
-                if qtr not in stats.quarter_stats:
+                # Ensure integer key consistency
+                qtr = int(qtr)
+                # Make sure quarter exists and has structure
+                if qtr not in stats.quarter_stats or not isinstance(stats.quarter_stats[qtr], dict):
                     stats.quarter_stats[qtr] = {'points': 0, 'minutes': 0, 'fgm': 0, 'fga': 0}
-                qtr_entry = stats.quarter_stats[qtr]
-                qtr_entry['points'] = qtr_entry.get('points', 0) + qtr_stats.get('points', 0)
-                qtr_entry['minutes'] = qtr_entry.get('minutes', 0) + qtr_stats.get('minutes', 0)
-                qtr_entry['fgm'] = qtr_entry.get('fgm', 0) + qtr_stats.get('fgm', 0)
-                qtr_entry['fga'] = qtr_entry.get('fga', 0) + qtr_stats.get('fga', 0)
+
+                # Safely add each stat
+                 for key in ['points', 'minutes', 'fgm', 'fga']:
+                     stats.quarter_stats[qtr][key] = stats.quarter_stats[qtr].get(key, 0) + qtr_stats.get(key, 0)
+
 
             
             if game.is_close_game and game_stats['minutes'] > 0:
@@ -491,8 +493,9 @@ def main():
         "📅 Games"
     ])
     
-    games = st.session_state.get('games', [])
-    player_stats = st.session_state.get('player_stats', {})
+    games = st.session_state.get("games", [])
+    player_stats = st.session_state.get("player_stats", {})
+
 
     
     # TAB 1: OVERVIEW
