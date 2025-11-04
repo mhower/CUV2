@@ -491,8 +491,9 @@ def main():
         "📅 Games"
     ])
     
-    games = st.session_state.games
-    player_stats = st.session_state.player_stats
+    games = st.session_state.get('games', [])
+    player_stats = st.session_state.get('player_stats', {})
+
     
     # TAB 1: OVERVIEW
     with tab1:
