@@ -299,16 +299,15 @@ def aggregate_stats(games):
                 'plus_minus': game_stats['plus_minus'],
                 'is_close': game.is_close_game,
             })
-            
-           for qtr, qtr_stats in (game_stats.get('quarter_stats') or {}).items():
-    qtr = int(qtr)  # Ensure consistent key type
-    if qtr not in stats.quarter_stats:
-        stats.quarter_stats[qtr] = {'points': 0, 'minutes': 0, 'fgm': 0, 'fga': 0}
-    qtr_entry = stats.quarter_stats[qtr]
-    qtr_entry['points'] = qtr_entry.get('points', 0) + qtr_stats.get('points', 0)
-    qtr_entry['minutes'] = qtr_entry.get('minutes', 0) + qtr_stats.get('minutes', 0)
-    qtr_entry['fgm'] = qtr_entry.get('fgm', 0) + qtr_stats.get('fgm', 0)
-    qtr_entry['fga'] = qtr_entry.get('fga', 0) + qtr_stats.get('fga', 0)
+            for qtr, qtr_stats in (game_stats.get('quarter_stats') or {}).items():
+                qtr = int(qtr)  # Ensure consistent key type
+                if qtr not in stats.quarter_stats:
+                    stats.quarter_stats[qtr] = {'points': 0, 'minutes': 0, 'fgm': 0, 'fga': 0}
+                qtr_entry = stats.quarter_stats[qtr]
+                qtr_entry['points'] = qtr_entry.get('points', 0) + qtr_stats.get('points', 0)
+                qtr_entry['minutes'] = qtr_entry.get('minutes', 0) + qtr_stats.get('minutes', 0)
+                qtr_entry['fgm'] = qtr_entry.get('fgm', 0) + qtr_stats.get('fgm', 0)
+                qtr_entry['fga'] = qtr_entry.get('fga', 0) + qtr_stats.get('fga', 0)
 
             
             if game.is_close_game and game_stats['minutes'] > 0:
