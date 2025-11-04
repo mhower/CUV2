@@ -299,16 +299,19 @@ def aggregate_stats(games):
                 'plus_minus': game_stats['plus_minus'],
                 'is_close': game.is_close_game,
             })
+            
+             # Quarter stats (safe aggregation)
             for qtr, qtr_stats in (game_stats.get('quarter_stats') or {}).items():
-                # Ensure integer key consistency
                 qtr = int(qtr)
-                # Make sure quarter exists and has structure
                 if qtr not in stats.quarter_stats or not isinstance(stats.quarter_stats[qtr], dict):
                     stats.quarter_stats[qtr] = {'points': 0, 'minutes': 0, 'fgm': 0, 'fga': 0}
 
-                # Safely add each stat
-                 for key in ['points', 'minutes', 'fgm', 'fga']:
-                     stats.quarter_stats[qtr][key] = stats.quarter_stats[qtr].get(key, 0) + qtr_stats.get(key, 0)
+            for key in ['points', 'minutes', 'fgm', 'fga']:
+                stats.quarter_stats[qtr][key] = (
+                    stats.quarter_stats[qtr].get(key, 0)
+                    + qtr_stats.get(key, 0)
+                )
+
 
 
             
